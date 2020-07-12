@@ -1,10 +1,13 @@
 import sys
 import time
+import copy
 start_time = time.time()
 
 debug = -1
 findAll = True
 numsolutions = 0
+allSolutions = []
+anyRatio = True
 # given a grid of boolean check to see if there are any squares 
 # where all 4 corners are either all true or all false
 def check4squares(grid,checkTrueOnly=False):
@@ -29,23 +32,29 @@ def check4squares(grid,checkTrueOnly=False):
                             return True
     return False
 
+# Pretty print the grid
 def ppGrid(grid):
-    for i in range(len(grid)):
-        print(grid[i])
+    for j in range(len(grid)):
+        for i in range(len(grid[0])):
+            print("{0:>5s} ".format(str(grid[j][i])), end='')
+        print()
     print()
 
-def findSquareFreeGrid(grid,numpoints,x=-1,y=0):
+def findSquareFreeGrid(grid,numpoints,x=-1,y=0,findAll=False):
+    global allSolutions
     global numsolutions
     #print(points)
-    if numpoints == (len(grid)*len(grid[0]))//2:
+    if numpoints == (len(grid)*len(grid[0]))//2 or anyRatio:
         if check4squares(grid):
-            return False
+            if not anyRatio:
+                return False
         else:
             numsolutions += 1
             ppGrid(grid)
-            if not findAll:
+            allSolutions.append(copy.deepcopy(grid))
+            if not findAll and not anyRatio:
                 return grid
-            else:
+            elif not anyRatio:
                 return False
     if numpoints>=4 and check4squares(grid,True):
         return False
@@ -55,7 +64,7 @@ def findSquareFreeGrid(grid,numpoints,x=-1,y=0):
             print(numsolutions)
             ppGrid(grid)
             print("--- {0:.3f} seconds ---".format(time.time() - start_time))
-        if findSquareFreeGrid(grid,numpoints+1,i,y):
+        if findSquareFreeGrid(grid,numpoints+1,i,y,findAll):
             return grid
         grid[i][y] = False
     for j in range(y+1,len(grid[0])):
@@ -65,16 +74,35 @@ def findSquareFreeGrid(grid,numpoints,x=-1,y=0):
                 print(numsolutions)
                 ppGrid(grid)
                 print("--- {0:.3f} seconds ---".format(time.time() - start_time))
-            if findSquareFreeGrid(grid,numpoints+1,i,j):
+            if findSquareFreeGrid(grid,numpoints+1,i,j,findAll):
                 return grid
             grid[i][j] = False
     return False
 
-size=5
-grid = [[False for i in range(size)] for j in range(size+2)]
-answer=findSquareFreeGrid(grid,0,0,0)
+def stackSolutions(allSolutions, stackedSolutions):
+    for i in range(len(allSolutions)):
+        if i%100==0:
+            print(i,"--- {0:.3f} seconds ---".format(time.time() - start_time),flush=True)
+        for j in range(len(allSolutions)):
+            grid = allSolutions[i] + allSolutions[j]
+            #print(grid)
+            if not check4squares(grid):
+                stackedSolutions.append(grid)
+
+
+M=6
+N=3
+grid = [[False for i in range(M)] for j in range(N)]
+answer=findSquareFreeGrid(grid,0,-1,0,findAll)
+#print(allSolutions)
 print(numsolutions)
+stackedSolutions=[]
+stackSolutions(allSolutions,stackedSolutions)
+for solution in stackedSolutions:
+    ppGrid(solution)
+print(len(stackedSolutions))
 #for i in range(len(answer)):
 #    print(answer[i])
 
 print("--- {0:.3f} seconds ---".format(time.time() - start_time))
+print(check4squares([[False,False,True],[False,True,True],[False,False,True]]))
